@@ -1,17 +1,19 @@
 from selenium.webdriver.support.ui import WebDriverWait
-import page_loader
+import parse_page
 
-browser = page_loader.create_browser()
+browser = parse_page.create_browser()
+url = "https://www.asus.com/us/store/laptops/"
 
 try:
-    browser.get("https://www.asus.com/us/store/laptops/")
+    browser.get(url)
     wait = WebDriverWait(browser, 5)
 
-    page_loader.accept_cookies(wait)
-    page_loader.close_stayHere_popup(wait)
+    parse_page.accept_cookies_close_popup(wait)
+    parse_page.load_full_page(wait)
 
-    page_loader.load_full_page(wait)
+    products = parse_page.syns_parse(browser)
+    for name, price in products:
+        print(f"{name}\t{price}")
 
 finally:
-    # browser.close()
-    pass
+    browser.close()
