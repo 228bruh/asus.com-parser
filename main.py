@@ -1,18 +1,9 @@
 from parse_page import Parser
-import time
+from db_manager import DatabaseManager
 
 parser = Parser()
-
-startTime = time.time()
-
-# products = parser.syns_parse()
-# for product in products:
-#     print(product)
-
 products = parser.asyns_parse()
-for p in products:
-    print(p)
 
-finishTime = time.time()
-print(finishTime - startTime)
-print(len(products))
+db = DatabaseManager()
+db.insert_parsing_results(products)
+db.close()
