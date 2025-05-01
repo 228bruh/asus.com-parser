@@ -6,4 +6,5 @@ products = parser.asyns_parse()
 
 db = DatabaseManager()
 db.insert_parsing_results(products)
+
 db.close()

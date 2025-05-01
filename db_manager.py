@@ -39,5 +39,13 @@ class DatabaseManager:
 
         self.cx.commit()
 
+    def get_selections(self):
+        self.cu.execute("SELECT * FROM selection")
+        return self.cu.fetchall()
+
+    def get_products_by_selecID(self, selection_id):
+        self.cu.execute("SELECT name, price FROM products WHERE selection_id = ?", (selection_id,))
+        return self.cu.fetchall()
+
     def close(self):
         self.cx.close()
