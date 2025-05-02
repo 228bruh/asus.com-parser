@@ -59,8 +59,8 @@ class Parser:
             browser.quit()
 
 
-    # ============== SYNS ==============
-    def syns_parse(self):
+    # ============== SYNC ==============
+    def sync_parse(self):
         products = []
 
         with requests.Session() as session:
@@ -79,7 +79,7 @@ class Parser:
         return products
 
 
-    # ============== ASYNS ==============
+    # ============== ASYNC ==============
     async def _fetch(self, session, url, semaphore):
         async with semaphore:
             try:
@@ -99,7 +99,7 @@ class Parser:
         except Exception:
             return ["Not found", "Not found"]
 
-    async def _asyns_parse_impl(self):
+    async def _async_parse_impl(self):
         results = []
         semaphore = asyncio.Semaphore(10)
 
@@ -115,5 +115,5 @@ class Parser:
 
         return results
 
-    def asyns_parse(self):
-        return asyncio.run(self._asyns_parse_impl())
+    def async_parse(self):
+        return asyncio.run(self._async_parse_impl())

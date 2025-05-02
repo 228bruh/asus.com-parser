@@ -1,10 +1,7 @@
-from parse_page import Parser
-from db_manager import DatabaseManager
+import tkinter
+from ui_app import App
 
-parser = Parser()
-products = parser.asyns_parse()
-
-db = DatabaseManager()
-db.insert_parsing_results(products)
-
-db.close()
+root = tkinter.Tk()
+root.geometry("1500x700")
+app = App(root)
+root.mainloop()
