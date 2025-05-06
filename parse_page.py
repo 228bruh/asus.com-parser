@@ -23,7 +23,6 @@ class Parser:
 
     def _accept_cookies(self, wait):
         try:
-            time.sleep(1)
             acceptBtn = wait.until(expected_conditions.element_to_be_clickable(
                 (By.CSS_SELECTOR, "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll")))
             acceptBtn.click()
@@ -33,8 +32,7 @@ class Parser:
     def _load_full_page(self, wait):
         while True:
             try:
-                loadMoreBtn = wait.until(expected_conditions.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "#loadmore_button")))
+                loadMoreBtn = wait.until(expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "#loadmore_button")))
                 loadMoreBtn.click()
             except Exception:
                 break
@@ -45,7 +43,9 @@ class Parser:
         try:
             browser.get(self.url)
             self._accept_cookies(wait)
+            print("Cookies accepted") ###
             self._load_full_page(wait)
+            print("Page loaded") ###
 
             elements = browser.find_elements(By.CSS_SELECTOR, "div.OfferBox > div > div > div > h3 > a")
             for el in elements:
@@ -56,6 +56,7 @@ class Parser:
                 except Exception:
                     continue
         finally:
+            print(len(self.links)) ###
             browser.quit()
 
 

@@ -11,66 +11,89 @@ class App:
         self.db = DatabaseManager()
         self.parser = Parser()
 
-        self.selection_tree = ttk.Treeview(root, columns=("ID", "Date", "Count"), show="headings", height=20)
-        self.selection_tree.heading("ID", text="ID")
-        self.selection_tree.heading("Date", text="Date")
-        self.selection_tree.heading("Count", text="Count")
-        self.selection_tree.column("ID", width=30)
-        self.selection_tree.column("Date", width=180)
-        self.selection_tree.column("Count", width=60)
-        self.selection_tree.place(x=10, y=10)
-        self.selection_tree.bind("<<TreeviewSelect>>", self.on_selection_change)
+        self.selectionTree = ttk.Treeview(root, columns=("ID", "Date", "Count"), show="headings", height=20)
+        self.selectionTree.heading("ID", text="ID")
+        self.selectionTree.heading("Date", text="Date")
+        self.selectionTree.heading("Count", text="Count")
+        self.selectionTree.column("ID", width=30)
+        self.selectionTree.column("Date", width=180)
+        self.selectionTree.column("Count", width=60)
+        self.selectionTree.place(x=10, y=10)
+        self.selectionTree.bind("<<TreeviewSelect>>", lambda event: self._on_selection_change())
 
-        self.product_tree = ttk.Treeview(root, columns=("Name", "Price"), show="headings", height=23)
-        self.product_tree.heading("Name", text="Name")
-        self.product_tree.heading("Price", text="Price")
-        self.product_tree.column("Name", width=1100)
-        self.product_tree.column("Price", width=90)
-        self.product_tree.place(x=300, y=10)
+        self.productsTree = ttk.Treeview(root, columns=("Name", "Price"), show="headings", height=23)
+        self.productsTree.heading("Name", text="Name")
+        self.productsTree.heading("Price", text="Price")
+        self.productsTree.column("Name", width=1100)
+        self.productsTree.column("Price", width=90)
+        self.productsTree.place(x=300, y=10)
 
-        self.sync_btn = tkinter.Button(root, text="Sync Parse", command=self.run_sync_parse)
-        self.sync_btn.place(width=130, x=10, y=460)
-        self.async_btn = tkinter.Button(root, text="Async Parse", command=self.run_async_parse)
-        self.async_btn.place(width=130, x=153, y=460)
+        self.syncBtn = tkinter.Button(root, text="Sync Parse", command=self._run_sync_parse)
+        self.syncBtn.place(width=130, x=10, y=460)
+        self.asyncBtn = tkinter.Button(root, text="Async Parse", command=self._run_async_parse)
+        self.asyncBtn.place(width=130, x=153, y=460)
 
-        self.load_selections()
+        self.sortVar = tkinter.StringVar(value="Name A-Z")
+        self.sortCBox = ttk.Combobox(root, textvariable=self.sortVar, state="readonly", values=[
+            "Name A-Z", "Name Z-A", "Price Low-High", "Price High-Low"])
+        self.sortCBox.place(x=1342, y=510, width=150, height=30)
+        self.sortCBox.bind("<<ComboboxSelected>>", lambda event: self._load_sorted_products())
 
-        self.root.protocol("WM_DELETE_WINDOW", self.on_exit)
-        self.root.bind("<Control-q>", lambda event: self.on_exit())
+        self.currentProducts = []
 
-    def load_selections(self):
-        for row in self.selection_tree.get_children():
-            self.selection_tree.delete(row)
+        self._load_selections()
+
+        self.root.protocol("WM_DELETE_WINDOW", self._on_exit)
+        self.root.bind("<Control-q>", lambda event: self._on_exit())
+
+    def _load_selections(self):
+        for row in self.selectionTree.get_children():
+            self.selectionTree.delete(row)
 
         selections = self.db.get_selections()
         for sel in selections:
-            self.selection_tree.insert("", tkinter.END, values=sel)
+            self.selectionTree.insert("", tkinter.END, values=sel)
 
-    def on_selection_change(self, event):
-        selected = self.selection_tree.selection()
+    def _on_selection_change(self):
+        selected = self.selectionTree.selection()
         if not selected:
             return
-        item = self.selection_tree.item(selected[0])
+        item = self.selectionTree.item(selected[0])
         selectionID = item["values"][0]
 
-        for row in self.product_tree.get_children():
-            self.product_tree.delete(row)
-            
-        products = self.db.get_products_by_selecID(selectionID)
-        for name, price in products:
-            self.product_tree.insert("", tkinter.END, values=(name, price))
+        self.currentProducts = self.db.get_products_by_selecID(selectionID)
+        self._load_sorted_products()
 
-    def run_sync_parse(self):
+    def _load_sorted_products(self):
+        sortType = self.sortVar.get()
+        products = list(self.currentProducts)
+
+        match sortType:
+            case "Name A-Z":
+                products.sort(key=lambda x: x[0].lower())
+            case "Name Z-A":
+                products.sort(key=lambda x: x[0].lower(), reverse=True)
+            case "Price Low-High":
+                products.sort(key=lambda x: float(x[1].replace("£", "").replace(",", "")))
+            case "Price High-Low":
+                products.sort(key=lambda x: float(x[1].replace("£", "").replace(",", "")), reverse=True)
+
+        for row in self.productsTree.get_children():
+            self.productsTree.delete(row)
+        for name, price in products:
+            self.productsTree.insert("", tkinter.END, values=(name, price))
+
+    def _run_sync_parse(self):
         products = self.parser.sync_parse()
         self.db.insert_parsing_results(products)
-        self.load_selections()
+        self._load_selections()
 
-    def run_async_parse(self):
+    def _run_async_parse(self):
         products = self.parser.async_parse()
         self.db.insert_parsing_results(products)
-        self.load_selections()
+        self._load_selections()
 
-    def on_exit(self):
+    def _on_exit(self):
         self.db.close()
         self.root.destroy()
 
