@@ -11,7 +11,7 @@ class App:
         self.db = DatabaseManager()
         self.parser = Parser()
 
-        self.selectionTree = ttk.Treeview(root, columns=("ID", "Date", "Count"), show="headings", height=20)
+        self.selectionTree = ttk.Treeview(root, columns=("ID", "Date", "Count"), show="headings", height=25)
         self.selectionTree.heading("ID", text="ID")
         self.selectionTree.heading("Date", text="Date")
         self.selectionTree.heading("Count", text="Count")
@@ -21,23 +21,32 @@ class App:
         self.selectionTree.place(x=10, y=10)
         self.selectionTree.bind("<<TreeviewSelect>>", lambda event: self._on_selection_change())
 
-        self.productsTree = ttk.Treeview(root, columns=("Name", "Price"), show="headings", height=23)
+        self.productsTree = ttk.Treeview(root, columns=("ID", "Name", "Price"), show="headings", height=28)
+        self.productsTree.heading("ID", text="ID")
         self.productsTree.heading("Name", text="Name")
         self.productsTree.heading("Price", text="Price")
-        self.productsTree.column("Name", width=1100)
+        self.productsTree.column("ID", width=30)
+        self.productsTree.column("Name", width=1070)
         self.productsTree.column("Price", width=90)
         self.productsTree.place(x=300, y=10)
 
         self.syncBtn = tkinter.Button(root, text="Sync Parse", command=self._run_sync_parse)
-        self.syncBtn.place(width=130, x=10, y=460)
+        self.syncBtn.place(width=130, x=10, y=560)
         self.asyncBtn = tkinter.Button(root, text="Async Parse", command=self._run_async_parse)
-        self.asyncBtn.place(width=130, x=153, y=460)
+        self.asyncBtn.place(width=130, x=153, y=560)
 
-        self.sortVar = tkinter.StringVar(value="Name A-Z")
-        self.sortCBox = ttk.Combobox(root, textvariable=self.sortVar, state="readonly", values=[
-            "Name A-Z", "Name Z-A", "Price Low-High", "Price High-Low"])
-        self.sortCBox.place(x=1342, y=510, width=150, height=30)
+        self.sortCBox = ttk.Combobox(root, state="readonly", values=[
+            "Name A-Z", "Name Z-A", "Price Low-High", "Price High-Low", "ID Low-High", "ID High-Low"])
+        self.sortCBox.set("Name A-Z")
+        self.sortCBox.place(x=1342, y=610, width=150, height=30)
         self.sortCBox.bind("<<ComboboxSelected>>", lambda event: self._load_sorted_products())
+
+        self.searchEntry = tkinter.Entry(root, foreground="grey")
+        self.searchEntry.insert(0, "Search")
+        self.searchEntry.place(x=300, y=610, width=300, height=30)
+        self.searchEntry.bind("<FocusIn>", lambda event: self._clear_placeholder())
+        self.searchEntry.bind("<FocusOut>", lambda event: self._set_placeholder())
+        self.searchEntry.bind("<Return>", lambda event: self._run_search())
 
         self.currentProducts = []
 
@@ -65,23 +74,46 @@ class App:
         self._load_sorted_products()
 
     def _load_sorted_products(self):
-        sortType = self.sortVar.get()
+        sortType = self.sortCBox.get()
         products = list(self.currentProducts)
 
         match sortType:
             case "Name A-Z":
-                products.sort(key=lambda x: x[0].lower())
+                products.sort(key=lambda x: x[1].lower())
             case "Name Z-A":
-                products.sort(key=lambda x: x[0].lower(), reverse=True)
+                products.sort(key=lambda x: x[1].lower(), reverse=True)
             case "Price Low-High":
-                products.sort(key=lambda x: float(x[1].replace("£", "").replace(",", "")))
+                products.sort(key=lambda x: float(x[2].replace("£", "").replace(",", "")))
             case "Price High-Low":
-                products.sort(key=lambda x: float(x[1].replace("£", "").replace(",", "")), reverse=True)
+                products.sort(key=lambda x: float(x[2].replace("£", "").replace(",", "")), reverse=True)
+            case "ID Low-High":
+                products.sort(key=lambda x: int(x[0]))
+            case "ID High-Low":
+                products.sort(key=lambda x: int(x[0]), reverse=True)
 
         for row in self.productsTree.get_children():
             self.productsTree.delete(row)
-        for name, price in products:
-            self.productsTree.insert("", tkinter.END, values=(name, price))
+        for id, name, price in products:
+            self.productsTree.insert("", tkinter.END, values=(id, name, price))
+
+    def _clear_placeholder(self):
+        if self.searchEntry.get() == "Search":
+            self.searchEntry.delete(0, tkinter.END)
+            self.searchEntry.config(foreground="black")
+
+    def _set_placeholder(self):
+        if not self.searchEntry.get():
+            self.searchEntry.insert(0, "Search")
+            self.searchEntry.config(foreground="grey")
+
+    def _run_search(self):
+        query = self.searchEntry.get().strip()
+        if not query or query == "Search":
+            return
+
+        products = self.db.search_products(query)
+        self.currentProducts = products
+        self._load_sorted_products()
 
     def _run_sync_parse(self):
         products = self.parser.sync_parse()
@@ -98,7 +130,7 @@ class App:
         self.root.destroy()
 
 
-# root = tkinter.Tk()
-# root.geometry("1500x700")
-# app = App(root)
-# root.mainloop()
+root = tkinter.Tk()
+root.geometry("1500x700")
+app = App(root)
+root.mainloop()

@@ -44,7 +44,16 @@ class DatabaseManager:
         return self.cu.fetchall()
 
     def get_products_by_selecID(self, selection_id):
-        self.cu.execute("SELECT name, price FROM products WHERE selection_id = ?", (selection_id,))
+        self.cu.execute("SELECT * FROM products WHERE selection_id = ?", (selection_id,))
+        return self.cu.fetchall()
+    
+    def search_products(self, query):
+        pattern = f"%{query.lower()}%"
+        self.cu.execute("""
+            SELECT selection_id, name, price
+            FROM products
+            WHERE LOWER(name) LIKE ? OR LOWER(price) LIKE ?
+        """, (pattern, pattern))
         return self.cu.fetchall()
 
     def close(self):
