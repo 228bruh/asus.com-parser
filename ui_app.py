@@ -44,9 +44,23 @@ class App:
         self.searchEntry = tkinter.Entry(root, foreground="grey")
         self.searchEntry.insert(0, "Search")
         self.searchEntry.place(x=300, y=610, width=300, height=30)
-        self.searchEntry.bind("<FocusIn>", lambda event: self._clear_placeholder())
-        self.searchEntry.bind("<FocusOut>", lambda event: self._set_placeholder())
+        self.searchEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.searchEntry))
+        self.searchEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.searchEntry, "Search"))
         self.searchEntry.bind("<Return>", lambda event: self._run_search())
+
+        self.minPriceEntry = tkinter.Entry(root, foreground="grey")
+        self.minPriceEntry.insert(0, "Min Price")
+        self.minPriceEntry.place(x=1100, y=610, width=90, height=30)
+        self.minPriceEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.minPriceEntry))
+        self.minPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.minPriceEntry, "Min Price"))
+        self.minPriceEntry.bind("<Return>", lambda event: self._load_sorted_products())
+
+        self.maxPriceEntry = tkinter.Entry(root, foreground="grey")
+        self.maxPriceEntry.insert(0, "Max Price")
+        self.maxPriceEntry.place(x=1200, y=610, width=90, height=30)
+        self.maxPriceEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.maxPriceEntry))
+        self.maxPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.maxPriceEntry, "Max Price"))
+        self.maxPriceEntry.bind("<Return>", lambda event: self._load_sorted_products())
 
         self.currentProducts = []
 
@@ -74,9 +88,10 @@ class App:
         self._load_sorted_products()
 
     def _load_sorted_products(self):
-        sortType = self.sortCBox.get()
         products = list(self.currentProducts)
 
+        # sorting
+        sortType = self.sortCBox.get()
         match sortType:
             case "Name A-Z":
                 products.sort(key=lambda x: x[1].lower())
@@ -91,20 +106,38 @@ class App:
             case "ID High-Low":
                 products.sort(key=lambda x: int(x[0]), reverse=True)
 
+        # filter
+        min_price_str = self.minPriceEntry.get()
+        max_price_str = self.maxPriceEntry.get()
+        try:
+            min_price = float(min_price_str) if min_price_str not in ("", "Min Price") else None
+        except ValueError:
+            min_price = None
+        try:
+            max_price = float(max_price_str) if max_price_str not in ("", "Max Price") else None
+        except ValueError:
+            max_price = None
+
+        if min_price is not None:
+            products = [p for p in products if float(p[2].replace("£", "").replace(",", "")) >= min_price]
+        if max_price is not None:
+            products = [p for p in products if float(p[2].replace("£", "").replace(",", "")) <= max_price]
+
+
         for row in self.productsTree.get_children():
             self.productsTree.delete(row)
         for id, name, price in products:
             self.productsTree.insert("", tkinter.END, values=(id, name, price))
 
-    def _clear_placeholder(self):
-        if self.searchEntry.get() == "Search":
-            self.searchEntry.delete(0, tkinter.END)
-            self.searchEntry.config(foreground="black")
+    def _clear_placeholder(self, entry):
+        if entry.get() in ("Search", "Min Price", "Max Price"):
+            entry.delete(0, tkinter.END)
+            entry.config(foreground="black")
 
-    def _set_placeholder(self):
-        if not self.searchEntry.get():
-            self.searchEntry.insert(0, "Search")
-            self.searchEntry.config(foreground="grey")
+    def _set_placeholder(self, entry, placeholder):
+        if not entry.get():
+            entry.insert(0, placeholder)
+            entry.config(foreground="grey")
 
     def _run_search(self):
         query = self.searchEntry.get().strip()
@@ -131,6 +164,6 @@ class App:
 
 
 root = tkinter.Tk()
-root.geometry("1500x700")
+root.geometry("1500x650")
 app = App(root)
 root.mainloop()
