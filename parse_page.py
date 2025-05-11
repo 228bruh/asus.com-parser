@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup
 import requests
 import asyncio
 import aiohttp
-import time
 
 class Parser:
     def __init__(self):

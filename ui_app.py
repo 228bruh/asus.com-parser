@@ -1,5 +1,7 @@
 import tkinter
 from tkinter import ttk
+from tkcalendar import DateEntry
+from datetime import datetime
 from parse_page import Parser
 from db_manager import DatabaseManager
 
@@ -31,39 +33,56 @@ class App:
         self.productsTree.place(x=300, y=10)
 
         self.syncBtn = tkinter.Button(root, text="Sync Parse", command=self._run_sync_parse)
-        self.syncBtn.place(width=130, x=10, y=560)
+        self.syncBtn.place(width=130, height=30, x=10, y=615)
         self.asyncBtn = tkinter.Button(root, text="Async Parse", command=self._run_async_parse)
-        self.asyncBtn.place(width=130, x=153, y=560)
+        self.asyncBtn.place(width=130, height=30, x=153, y=615)
 
         self.sortCBox = ttk.Combobox(root, state="readonly", values=[
             "Name A-Z", "Name Z-A", "Price Low-High", "Price High-Low", "ID Low-High", "ID High-Low"])
         self.sortCBox.set("Name A-Z")
-        self.sortCBox.place(x=1342, y=610, width=150, height=30)
+        self.sortCBox.place(x=1342, y=615, width=150, height=30)
         self.sortCBox.bind("<<ComboboxSelected>>", lambda event: self._load_sorted_products())
 
         self.searchEntry = tkinter.Entry(root, foreground="grey")
         self.searchEntry.insert(0, "Search")
-        self.searchEntry.place(x=300, y=610, width=300, height=30)
+        self.searchEntry.place(x=300, y=615, width=300, height=30)
         self.searchEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.searchEntry))
         self.searchEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.searchEntry, "Search"))
         self.searchEntry.bind("<Return>", lambda event: self._run_search())
 
         self.minPriceEntry = tkinter.Entry(root, foreground="grey")
         self.minPriceEntry.insert(0, "Min Price")
-        self.minPriceEntry.place(x=1100, y=610, width=90, height=30)
+        self.minPriceEntry.place(x=1100, y=615, width=90, height=30)
         self.minPriceEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.minPriceEntry))
         self.minPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.minPriceEntry, "Min Price"))
         self.minPriceEntry.bind("<Return>", lambda event: self._load_sorted_products())
 
         self.maxPriceEntry = tkinter.Entry(root, foreground="grey")
         self.maxPriceEntry.insert(0, "Max Price")
-        self.maxPriceEntry.place(x=1200, y=610, width=90, height=30)
+        self.maxPriceEntry.place(x=1200, y=615, width=90, height=30)
         self.maxPriceEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.maxPriceEntry))
         self.maxPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.maxPriceEntry, "Max Price"))
         self.maxPriceEntry.bind("<Return>", lambda event: self._load_sorted_products())
 
+        self.fromDateEntry = DateEntry(root, date_pattern="dd.mm.yyyy", command=self._load_selections)
+        self.fromDateEntry.place(x=10, y=567, width=130, height=30)
+        self.fromDateEntry.bind("<<DateEntrySelected>>", lambda event: self._load_selections())
+        self.toDateEntry = DateEntry(root, date_pattern="dd.mm.yyyy", command=self._load_selections)
+        self.toDateEntry.place(x=153, y=567, width=130, height=30)
+        self.toDateEntry.bind("<<DateEntrySelected>>", lambda event: self._load_selections())
+
+        self.vertSeparator = ttk.Separator(root, orient="vertical")
+        self.vertSeparator.place(x=290, y=10, height=635)
+        self.horSeparator = ttk.Separator(root, orient="horizontal")
+        self.horSeparator.place(x=10, y=605, width=1480)
+        self.fromLbl = tkinter.Label(root, text="From:")
+        self.fromLbl.place(x=10, y=545, height=20)
+        self.toLbl = tkinter.Label(root, text="To:")
+        self.toLbl.place(x=153, y=545, height=20)
+
         self.currentProducts = []
 
+        self._conf_dateEnries()
         self._load_selections()
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_exit)
@@ -74,8 +93,13 @@ class App:
             self.selectionTree.delete(row)
 
         selections = self.db.get_selections()
+        fromDate = self.fromDateEntry.get_date()
+        toDate = self.toDateEntry.get_date()
+
         for sel in selections:
-            self.selectionTree.insert("", tkinter.END, values=sel)
+            selDate = datetime.strptime(sel[1], "%d.%m.%Y %H:%M:%S").date()
+            if fromDate <= selDate <= toDate:
+                self.selectionTree.insert("", tkinter.END, values=sel)
 
     def _on_selection_change(self):
         selected = self.selectionTree.selection()
@@ -148,22 +172,35 @@ class App:
         self.currentProducts = products
         self._load_sorted_products()
 
+    def _conf_dateEnries(self):
+        selections = self.db.get_selections()
+        if not selections: return
+
+        minDate = datetime.strptime(selections[0][1], "%d.%m.%Y %H:%M:%S").date()
+        maxDate = datetime.strptime(selections[-1][1], "%d.%m.%Y %H:%M:%S").date()
+        
+        self.fromDateEntry.config(mindate=minDate, maxdate=maxDate)
+        self.toDateEntry.config(mindate=minDate, maxdate=maxDate)
+        self.fromDateEntry.set_date(minDate)
+        self.toDateEntry.set_date(maxDate)
+
     def _run_sync_parse(self):
         products = self.parser.sync_parse()
         self.db.insert_parsing_results(products)
+        self._conf_dateEnries()
         self._load_selections()
 
     def _run_async_parse(self):
         products = self.parser.async_parse()
         self.db.insert_parsing_results(products)
+        self._conf_dateEnries()
         self._load_selections()
 
     def _on_exit(self):
         self.db.close()
         self.root.destroy()
 
-
 root = tkinter.Tk()
-root.geometry("1500x650")
+root.geometry("1500x655")
 app = App(root)
 root.mainloop()
