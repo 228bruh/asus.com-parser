@@ -2,8 +2,8 @@ import sqlite3
 from datetime import datetime
 
 class DatabaseManager:
-    def __init__(self):
-        self.cx = sqlite3.connect("products.db")
+    def __init__(self, dbName=None):
+        self.cx = sqlite3.connect(dbName or "products.db")
         self.cu = self.cx.cursor()
         self._create_tables()
 
