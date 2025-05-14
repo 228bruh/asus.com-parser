@@ -9,10 +9,11 @@ import asyncio
 import aiohttp
 
 class Parser:
-    def __init__(self):
+    def __init__(self, links=None):
         self.url = "https://www.laptopsdirect.co.uk/ct/laptops-and-netbooks/laptops/gaming"
-        self.links = []
-        self._collect_links()
+        self.links = links or []
+        if not links: 
+            self._collect_links()
 
     def _create_browser(self):
         options = webdriver.FirefoxOptions()
@@ -100,7 +101,7 @@ class Parser:
             return ["Not found", "Not found"]
 
     async def _async_parse_impl(self):
-        results = []
+        products = []
         semaphore = asyncio.Semaphore(10)
 
         async with aiohttp.ClientSession() as session:
@@ -109,11 +110,11 @@ class Parser:
 
             for html in pages:
                 if html:
-                    results.append(self._parse_html(html))
+                    products.append(self._parse_html(html))
                 else:
-                    results.append(["Not found", "Not found"])
+                    products.append(["Not found", "Not found"])
 
-        return results
+        return products
 
     def async_parse(self):
         return asyncio.run(self._async_parse_impl())
