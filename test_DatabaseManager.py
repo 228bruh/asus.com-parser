@@ -1,7 +1,7 @@
 import pytest
 import random
-from parse_page import Parser
-from db_manager import DatabaseManager
+from parser import Parser
+from DB_mngr import DatabaseManager
 
 @pytest.fixture(scope="module")
 def parser():
@@ -30,6 +30,11 @@ def test_products_stored_correctly(db_with_data, products):
 
     assert storedProducts == expected, "Stored products dont match with expected products"
 
+def test_productCount_matches_actualProducts(db_with_data):
+    recordedCount = db_with_data.get_selections()[0][2]
+    actualCount = len(db_with_data.get_products_by_selecID(1))
+    assert recordedCount == actualCount, "Recorded product count does not match actual number of products"
+    
 def test_compare_randomLinks_with_db(parser, db_with_data):
     allLinks = parser.links
     randomIndices = random.sample(range(len(allLinks)), 3)
@@ -43,4 +48,3 @@ def test_compare_randomLinks_with_db(parser, db_with_data):
     storedSubsetCleaned = [(name, price) for _, name, price in storedSubset]
 
     assert parsedSubset == storedSubsetCleaned, "Parsed links dont match stored products in DB"
-

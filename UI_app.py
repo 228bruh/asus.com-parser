@@ -2,8 +2,8 @@ import tkinter
 from tkinter import ttk
 from tkcalendar import DateEntry
 from datetime import datetime
-from parse_page import Parser
-from db_manager import DatabaseManager
+from parser import Parser
+from DB_mngr import DatabaseManager
 
 class App:
     def __init__(self, root):

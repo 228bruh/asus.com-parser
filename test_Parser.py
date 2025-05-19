@@ -1,6 +1,6 @@
 import pytest
 import random
-from parse_page import Parser
+from parser import Parser
 
 @pytest.fixture(scope="module")
 def all_links():
@@ -53,7 +53,7 @@ def test_sync_vs_async(random_links):
     async_results = parser.async_parse()
     assert sync_results == async_results
 
-invalidLinks = ["http://invalid.link", "https://fakelink.bruh", "qwert://dontwork.zxc",]
+invalidLinks = ["http://invalid.link/", "https://fakelink.bruh/", "https://www.google.com/",]
 @pytest.mark.parametrize("link", invalidLinks)
 def test_invalid_link_sync(link):
     parser = Parser(links=[link])
