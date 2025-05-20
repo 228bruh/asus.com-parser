@@ -53,20 +53,20 @@ class App:
 
         self.searchEntry = tkinter.Entry(self.root, foreground="grey")
         self.searchEntry.insert(0, "Search")
-        self.searchEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.searchEntry))
-        self.searchEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.searchEntry, "Search"))
+        self.searchEntry.bind("<FocusIn>", lambda event: self._set_placeholder(self.searchEntry, clear=True))
+        self.searchEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.searchEntry, placeholder="Search"))
         self.searchEntry.bind("<Return>", lambda event: self._run_search())
 
         self.minPriceEntry = tkinter.Entry(self.root, foreground="grey")
         self.minPriceEntry.insert(0, "Min Price")
-        self.minPriceEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.minPriceEntry))
-        self.minPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.minPriceEntry, "Min Price"))
+        self.minPriceEntry.bind("<FocusIn>", lambda event: self._set_placeholder(self.minPriceEntry, clear=True))
+        self.minPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.minPriceEntry, placeholder="Min Price"))
         self.minPriceEntry.bind("<Return>", lambda event: self._load_sorted_products())
 
         self.maxPriceEntry = tkinter.Entry(self.root, foreground="grey")
         self.maxPriceEntry.insert(0, "Max Price")
-        self.maxPriceEntry.bind("<FocusIn>", lambda event: self._clear_placeholder(self.maxPriceEntry))
-        self.maxPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.maxPriceEntry, "Max Price"))
+        self.maxPriceEntry.bind("<FocusIn>", lambda event: self._set_placeholder(self.maxPriceEntry, clear=True))
+        self.maxPriceEntry.bind("<FocusOut>", lambda event: self._set_placeholder(self.maxPriceEntry, placeholder="Max Price"))
         self.maxPriceEntry.bind("<Return>", lambda event: self._load_sorted_products())
 
         self.fromDateEntry = DateEntry(self.root, date_pattern="dd.mm.yyyy", state="readonly", command=self._load_selections)
@@ -136,9 +136,9 @@ class App:
             case "Name Z-A":
                 products.sort(key=lambda x: x[1].lower(), reverse=True)
             case "Price Low-High":
-                products.sort(key=lambda x: float(x[2].replace("£", "").replace(",", "")))
+                products.sort(key=lambda x: float(x[2].replace("£", "")) if x[2] != "Not found" else 0.0)
             case "Price High-Low":
-                products.sort(key=lambda x: float(x[2].replace("£", "").replace(",", "")), reverse=True)
+                products.sort(key=lambda x: float(x[2].replace("£", "")) if x[2] != "Not found" else 0.0, reverse=True)
             case "ID Low-High":
                 products.sort(key=lambda x: int(x[0]))
             case "ID High-Low":
@@ -148,18 +148,18 @@ class App:
         min_price_str = self.minPriceEntry.get()
         max_price_str = self.maxPriceEntry.get()
         try:
-            min_price = float(min_price_str) if min_price_str not in ("", "Min Price") else None
+            min_price = float(min_price_str)
         except ValueError:
             min_price = None
         try:
-            max_price = float(max_price_str) if max_price_str not in ("", "Max Price") else None
+            max_price = float(max_price_str)
         except ValueError:
             max_price = None
 
         if min_price is not None:
-            products = [p for p in products if float(p[2].replace("£", "").replace(",", "")) >= min_price]
+            products = [p for p in products if p[2] != "Not found" and float(p[2].replace("£", "")) >= min_price]
         if max_price is not None:
-            products = [p for p in products if float(p[2].replace("£", "").replace(",", "")) <= max_price]
+            products = [p for p in products if p[2] != "Not found" and float(p[2].replace("£", "")) <= max_price]
 
 
         for row in self.productsTree.get_children():
@@ -167,15 +167,15 @@ class App:
         for id, name, price in products:
             self.productsTree.insert("", tkinter.END, values=(id, name, price))
 
-    def _clear_placeholder(self, entry):
-        if entry.get() in ("Search", "Min Price", "Max Price"):
-            entry.delete(0, tkinter.END)
-            entry.config(foreground="black")
-
-    def _set_placeholder(self, entry, placeholder):
-        if not entry.get():
-            entry.insert(0, placeholder)
-            entry.config(foreground="grey")
+    def _set_placeholder(self, entry, placeholder="", clear=False):
+        if clear == False:
+            if not entry.get():
+                entry.insert(0, placeholder)
+                entry.config(foreground="grey")
+        else:
+            if entry.get() in ("Search", "Min Price", "Max Price"):
+                entry.delete(0, tkinter.END)
+                entry.config(foreground="black")
 
     def _run_search(self):
         query = self.searchEntry.get().strip()
