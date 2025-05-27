@@ -67,7 +67,7 @@ class Parser:
         with requests.Session() as session:
             for link in self.links:
                 try:
-                    r = session.get(link, timeout=10)
+                    r = session.get(link)
                     soup = BeautifulSoup(r.text, "html.parser")
 
                     name = soup.select_one("h1 > span").get_text().strip()
@@ -84,7 +84,7 @@ class Parser:
     async def _fetch(self, session, url, semaphore):
         async with semaphore:
             try:
-                async with session.get(url, timeout=10) as r:
+                async with session.get(url) as r:
                     if r.status == 200:
                         return await r.text()
             except Exception:

@@ -8,8 +8,6 @@ from DB_mngr import DatabaseManager
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1500x655")
-        self.root.title("laptopsdirect.co.uk parser")
 
         self.db = DatabaseManager()
         self.parser = Parser()
@@ -26,6 +24,10 @@ class App:
         self.root.bind("<Control-q>", lambda event: self._on_exit())
 
     def _create_widgets(self):
+        self.root.geometry("1500x655")
+        self.root.resizable(False, False)
+        self.root.title("laptopsdirect.co.uk parser")
+
         self.selectionTree = ttk.Treeview(self.root, columns=("ID", "Date", "Count"), show="headings", height=25)
         self.selectionTree.heading("ID", text="ID")
         self.selectionTree.heading("Date", text="Date")
